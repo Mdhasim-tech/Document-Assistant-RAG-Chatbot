@@ -1,0 +1,11 @@
+langchain-community
+pypdf
+langchain-text-splitters
+langchain-huggingface
+sentence_transformers
+langchain_chroma
+langchain_groq
+python-dotenv
+pymupdf
+flask
+flask-cors

@@ -1,0 +1,9 @@
+The shelve  module in Python provides a convenient way to save and retrieve 
+Python objects such as variables, dictionaries, and lists to and from disk files. It 
+acts as a persistent, dictionary-like storage system, allowing you to store and 
+retrieve objects using keys.
+Using the shelve Module:
+1. Importing the Module:
+First, you need to import the shelve  module.
+import shelve
+2. Opening a Shel
