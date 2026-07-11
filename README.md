@@ -16,7 +16,10 @@ An AI-powered Retrieval-Augmented Generation (RAG) chatbot that allows users to 
 - 📱 Responsive React frontend
 
 ---
-<img width="1356" height="638" alt="rag3" src="https://github.com/user-attachments/assets/8745a4e9-dc9e-4550-adf8-b1f534ac0e57" />
+<img width="1358" height="680" alt="rag1" src="https://github.com/user-attachments/assets/985ca8b1-8210-4485-86a9-a75b85fb88f5" />
+<img width="1358" height="646" alt="rag2" src="https://github.com/user-attachments/assets/8f75d768-f521-4b0c-933b-46e8e6799df0" />
+<img width="1356" height="638" alt="rag3" src="https://github.com/user-attachments/assets/4a48797e-887b-434d-8418-1a0ae159a9d5" />
+
 
 
 ## 🛠️ Tech Stack
