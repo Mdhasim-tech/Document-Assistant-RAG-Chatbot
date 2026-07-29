@@ -10,7 +10,12 @@ import json
 
 load_dotenv()
 
+# Global embedding model (loaded once)
+embedding_model = HuggingFaceEmbeddings(
+    model_name="sentence-transformers/all-MiniLM-L6-v2"
+)
 
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
 def load_documents(pdf_path):
 
     loader = PyMuPDFLoader(pdf_path)
@@ -51,11 +56,6 @@ def is_useful_chunk(
 
 
 def chunking(documents):
-
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200
-    )
 
     chunks = text_splitter.split_documents(documents)
 
@@ -120,10 +120,6 @@ def generate_pdf_summary(pages, chat_id):
 
 
 def makeVectors_storeDB(chunks, chat_id):
-
-    embedding_model = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-mpnet-base-v2"
-    )
 
     persist_path = f"chroma_langchain_db/{chat_id}"
 

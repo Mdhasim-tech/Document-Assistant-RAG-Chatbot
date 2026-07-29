@@ -50,7 +50,7 @@ function ChatInput({
       setLoading(true);
 
       const response = await axios.post(
-        "https://document-assistant-rag-chatbot.onrender.com/ask",
+        "http://localhost:5000/ask",
         {
           question: question,
 

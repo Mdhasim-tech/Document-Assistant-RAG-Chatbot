@@ -9,12 +9,12 @@ import json
 
 load_dotenv()
 
+# Global embedding model
+embedding_model = HuggingFaceEmbeddings(
+    model_name="sentence-transformers/all-MiniLM-L6-v2"
+)
 
 def load_vectorDB(chat_id):
-
-    embedding_model = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-mpnet-base-v2"
-    )
 
     vectorstore = Chroma(
         persist_directory=f'chroma_langchain_db/{chat_id}',
