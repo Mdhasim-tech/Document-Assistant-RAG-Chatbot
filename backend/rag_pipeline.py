@@ -2,10 +2,10 @@ from langchain_huggingface.embeddings import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langchain_core.prompts import PromptTemplate
 from langchain_groq import ChatGroq
+from database import summaries_collection
 from dotenv import load_dotenv
 
 import os
-import json
 
 load_dotenv()
 
@@ -14,11 +14,13 @@ embedding_model = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
 )
 
-def load_vectorDB(chat_id):
+
+def load_vectorDB():
 
     vectorstore = Chroma(
-        persist_directory=f'chroma_langchain_db/{chat_id}',
-        embedding_function=embedding_model
+        persist_directory="chroma_langchain_db",
+        embedding_function=embedding_model,
+        collection_name="documents",
     )
 
     return vectorstore
@@ -26,30 +28,20 @@ def load_vectorDB(chat_id):
 
 def load_pdf_summary(chat_id):
 
-    summary_path = f"summaries/{chat_id}.json"
+    doc = summaries_collection.find_one({"chatId": chat_id}, {"_id": 0, "summary": 1})
 
-    if os.path.exists(summary_path):
-
-        with open(summary_path, "r") as f:
-
-            data = json.load(f)
-
-        return data["summary"]
+    if doc:
+        return doc["summary"]
 
     return "This is a document. No summary was generated during ingestion."
 
 
-def build_retriever(vectorstore):
+def build_retriever(vectorstore, chat_id):
 
     retriever = vectorstore.as_retriever(
         search_type="mmr",
-        search_kwargs={
-            "k": 6,
-            "fetch_k": 20
-        }
+        search_kwargs={"k": 6, "fetch_k": 20, "filter": {"chatId": chat_id}},
     )
-
-    print("Retriever Ready (top_k=6)")
 
     return retriever
 

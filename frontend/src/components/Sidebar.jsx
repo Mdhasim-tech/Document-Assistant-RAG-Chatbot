@@ -5,75 +5,69 @@ function Sidebar({
   setChats,
   currentChatId,
   setCurrentChatId,
+  setMessages,
 }) {
-  const [editingChatId, setEditingChatId] =
-    useState(null);
+  const [editingChatId, setEditingChatId] = useState(null);
 
-  const [editedName, setEditedName] =
-    useState("");
+  const [editedName, setEditedName] = useState("");
 
   const handleNewChat = () => {
     const newChat = {
       chatId: crypto.randomUUID(),
-      chatName: "New Chat",
-      messages: [],
+      title: "New Chat",
     };
 
-    setChats((prev) => [
-      ...prev,
-      newChat,
-    ]);
+    setChats((prev) => [...prev, newChat]);
 
     setCurrentChatId(newChat.chatId);
+
+    // Clear messages so welcome screen appears
+    setMessages([]);
   };
 
-  const handleDelete = (chatId) => {
-    setChats((prev) => {
-      const updatedChats = prev.filter(
-        (chat) => chat.chatId !== chatId
-      );
-
-      if (currentChatId === chatId) {
-        setCurrentChatId(
-          updatedChats.length > 0
-            ? updatedChats[0].chatId
-            : null
-        );
-      }
-
-      return updatedChats;
-    });
-  };
-
-  const handleRename = (
-    chatId,
-    currentName
-  ) => {
+  const handleRename = (chatId, currentName) => {
     setEditingChatId(chatId);
     setEditedName(currentName);
   };
 
   const saveRename = (chatId) => {
-    const trimmedName =
-      editedName.trim();
+    const trimmedName = editedName.trim();
 
     if (!trimmedName) {
       setEditingChatId(null);
       return;
     }
 
+    // Local update for now
     setChats((prev) =>
       prev.map((chat) =>
         chat.chatId === chatId
           ? {
-              ...chat,
-              chatName: trimmedName,
-            }
+            ...chat,
+            title: trimmedName,
+          }
           : chat
       )
     );
 
+    // Backend API later
+    // axios.patch(`/chat/${chatId}/rename`, { title: trimmedName });
+
     setEditingChatId(null);
+  };
+
+  const handleDelete = (chatId) => {
+    console.log("Delete:", chatId);
+
+    // Backend API later
+    // axios.delete(`/chat/${chatId}`);
+
+    setChats((prev) => prev.filter((chat) => chat.chatId !== chatId));
+
+    if (currentChatId === chatId) {
+      setCurrentChatId(null);
+      setMessages([]);
+    }
   };
 
   return (
@@ -91,47 +85,36 @@ function Sidebar({
         {chats.map((chat) => (
           <div
             key={chat.chatId}
-            className={`chat-item ${
-              currentChatId === chat.chatId
+            className={`chat-item ${currentChatId === chat.chatId
                 ? "active-chat"
                 : ""
-            }`}
+              }`}
             onClick={() =>
-              setCurrentChatId(
-                chat.chatId
-              )
+              setCurrentChatId(chat.chatId)
             }
           >
-            {editingChatId ===
-            chat.chatId ? (
+            {editingChatId === chat.chatId ? (
               <input
                 className="rename-input"
                 value={editedName}
                 onChange={(e) =>
-                  setEditedName(
-                    e.target.value
-                  )
+                  setEditedName(e.target.value)
                 }
                 onBlur={() =>
-                  saveRename(
-                    chat.chatId
-                  )
+                  saveRename(chat.chatId)
                 }
                 onKeyDown={(e) => {
-                  if (
-                    e.key ===
-                    "Enter"
-                  ) {
-                    saveRename(
-                      chat.chatId
-                    );
+                  if (e.key === "Enter") {
+                    saveRename(chat.chatId);
                   }
                 }}
                 autoFocus
               />
             ) : (
               <span className="chat-name">
-                {chat.chatName}
+                {chat.title ||
+                  chat.pdfName ||
+                  "New Chat"}
               </span>
             )}
 
@@ -142,7 +125,9 @@ function Sidebar({
 
                 handleRename(
                   chat.chatId,
-                  chat.chatName
+                  chat.title ||
+                  chat.pdfName ||
+                  "New Chat"
                 );
               }}
             >
@@ -153,10 +138,7 @@ function Sidebar({
               className="delete-btn"
               onClick={(e) => {
                 e.stopPropagation();
-
-                handleDelete(
-                  chat.chatId
-                );
+                handleDelete(chat.chatId);
               }}
             >
               🗑️

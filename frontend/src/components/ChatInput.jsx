@@ -1,11 +1,14 @@
 import { useState } from "react";
 import axios from "axios";
 
+const API_URL =
+  "http://localhost:5000";
+
 function ChatInput({
 
-  chats,
-  setChats,
-  currentChatId
+  currentChatId,
+  messages,
+  setMessages
 
 }) {
 
@@ -15,87 +18,61 @@ function ChatInput({
 
   const handleAsk = async () => {
 
-    if (!question.trim()) return;
+    const trimmedQuestion = question.trim();
+
+    if (!trimmedQuestion || !currentChatId || loading) {
+      return;
+    }
 
     const userMessage = {
-
       sender: "user",
-
-      text: question
-
+      text: trimmedQuestion
     };
 
-    // add user message to correct chat
-    setChats((prev) =>
+    // Show user message immediately
+    setMessages(prev => [
+      ...prev,
+      userMessage
+    ]);
 
-      prev.map((chat) =>
-
-        chat.chatId === currentChatId
-
-          ? {
-              ...chat,
-
-              messages: [
-                ...chat.messages,
-                userMessage
-              ]
-            }
-
-          : chat
-      )
-    );
+    setQuestion("");
+    setLoading(true);
 
     try {
 
-      setLoading(true);
-
       const response = await axios.post(
-        "http://localhost:5000/ask",
+        `${API_URL}/ask`,
         {
-          question: question,
-
+          question: trimmedQuestion,
           chatId: currentChatId
         }
       );
 
       const aiMessage = {
-
-        sender: "ai",
-
+        sender: "assistant",
         text: response.data.answer
       };
 
-      // add ai message to correct chat
-      setChats((prev) =>
-
-        prev.map((chat) =>
-
-          chat.chatId === currentChatId
-
-            ? {
-                ...chat,
-
-                messages: [
-                  ...chat.messages,
-                  aiMessage
-                ]
-              }
-
-            : chat
-        )
-      );
+      setMessages(prev => [
+        ...prev,
+        aiMessage
+      ]);
 
     } catch (error) {
 
       console.error(error);
 
+      // Remove the optimistic user message if request failed
+      setMessages(prev => prev.slice(0, -1));
+
+      alert("Failed to get response from the server.");
+
     } finally {
 
       setLoading(false);
 
-      setQuestion("");
-
     }
+
   };
 
   return (
@@ -106,18 +83,26 @@ function ChatInput({
         type="text"
         placeholder="Ask something about the document..."
         value={question}
+        disabled={loading}
         onChange={(e) =>
           setQuestion(e.target.value)
         }
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            handleAsk();
+          }
+        }}
       />
 
-      <button onClick={handleAsk}>
-
+      <button
+        onClick={handleAsk}
+        disabled={loading || !currentChatId}
+      >
         {loading ? "Thinking..." : "Send"}
-
       </button>
 
     </div>
+
   );
 }
 

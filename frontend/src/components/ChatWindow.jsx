@@ -1,102 +1,87 @@
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 import UploadBox from "./UploadBox";
-import { useRef,useEffect } from "react";
+import { useRef, useEffect } from "react";
 
 function ChatWindow({
-
   chats,
   setChats,
-  currentChatId
-
+  messages,
+  setMessages,
+  currentChatId,
+  fetchChats
 }) {
-    const bottomRef = useRef(null);
+
+  const bottomRef = useRef(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({
-      behavior: "smooth"
+      behavior: "smooth",
     });
-  }, [chats]);
+  }, [messages]);
 
-  // active chat
   const currentChat = chats.find(
     (chat) => chat.chatId === currentChatId
   );
 
   return (
-
     <div className="chat-window">
 
       <div className="messages">
 
-        {
-          !currentChat && (
+        {!currentChat ? (
 
-            <div className="welcome-message">
+          <div className="welcome-message">
+            Create a new chat to begin.
+          </div>
 
-              Create a new chat to begin.
+        ) : (
 
-            </div>
-          )
-        }
+          <>
+              {messages.length === 0 && !currentChat.summary && (
+              <div className="welcome-message">
+                Upload a document and start chatting.
+              </div>
+            )}
 
-        {
-          currentChat &&
-          currentChat.messages.length === 0 && (
+            {/* Show upload only if no PDF uploaded */}
+            {!currentChat.pdfName && (
+              <UploadBox
+                currentChatId={currentChatId}
+                fetchChats={fetchChats}
+              />
+            )}
 
-            <div className="welcome-message">
+            {/* Show summary after upload */}
+            {currentChat.summary && (
+              <div className="summary-box">
+                <h3>Document Summary</h3>
+                <p>{currentChat.summary}</p>
+              </div>
+            )}
 
-              Upload a document and start chatting.
+            {/* Chat messages */}
+            {messages.map((msg, index) => (
+              <MessageBubble
+                key={index}
+                sender={msg.sender}
+                text={msg.text}
+              />
+            ))}
+          </>
+        )}
 
-            </div>
-          )
-        }
-
-        {
-          currentChat && (
-
-            <UploadBox
-
-              chats={chats}
-
-              setChats={setChats}
-
-              currentChatId={currentChatId}
-
-            />
-          )
-        }
-
-        {
-          currentChat?.messages.map((msg, index) => (
-
-            <MessageBubble
-              key={index}
-              sender={msg.sender}
-              text={msg.text}
-            />
-
-          ))
-        }
         <div ref={bottomRef}></div>
 
       </div>
 
-      {
-        currentChat && (
-
-          <ChatInput
-
-            chats={chats}
-
-            setChats={setChats}
-
-            currentChatId={currentChatId}
-
-          />
-        )
-      }
-
+      {currentChat && (
+        <ChatInput
+          currentChatId={currentChatId}
+          messages={messages}
+          setMessages={setMessages}
+        />
+      )}
 
     </div>
   );

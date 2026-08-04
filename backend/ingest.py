@@ -5,17 +5,23 @@ from langchain_chroma import Chroma
 from langchain_groq import ChatGroq
 from dotenv import load_dotenv
 
+from database import summaries_collection
+from datetime import datetime, timezone
 import os
-import json
-
 load_dotenv()
 
 # Global embedding model (loaded once)
 embedding_model = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
 )
+summary_llm = ChatGroq(
+    model="llama-3.3-70b-versatile",
+    temperature=0,
+    max_tokens=300,
+    api_key=os.getenv("GROQ_API_KEY"),
+)
 
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=1200, chunk_overlap=200)
 def load_documents(pdf_path):
 
     loader = PyMuPDFLoader(pdf_path)
@@ -25,52 +31,13 @@ def load_documents(pdf_path):
     return doc
 
 
-def is_useful_chunk(
-    text: str,
-    min_length: int = 200
-) -> bool:
-
-    lines = text.strip().split('\n')
-
-    non_empty_lines = [
-        l for l in lines if l.strip()
-    ]
-
-    if len(text.strip()) < min_length:
-
-        return False
-
-    short_lines = [
-        l for l in non_empty_lines
-        if len(l.strip()) < 60
-    ]
-
-    if (
-        len(non_empty_lines) > 0 and
-        (len(short_lines) / len(non_empty_lines)) > 0.75
-    ):
-
-        return False
-
-    return True
-
-
 def chunking(documents):
 
     chunks = text_splitter.split_documents(documents)
 
-    filtered_chunks = [
+    print(f"Generated {len(chunks)} chunks")
 
-        doc for doc in chunks
-
-        if is_useful_chunk(doc.page_content)
-    ]
-
-    print(
-        "-------------------Chunking has been done!----------------------------------"
-    )
-
-    return filtered_chunks
+    return chunks
 
 
 def generate_pdf_summary(pages, chat_id):
@@ -78,13 +45,6 @@ def generate_pdf_summary(pages, chat_id):
     intro_text = " ".join([
         p.page_content for p in pages[:3]
     ])[:3000]
-
-    llm = ChatGroq(
-        model="llama-3.3-70b-versatile",
-        temperature=0,
-        max_tokens=300,
-        api_key=os.getenv("GROQ_API_KEY")
-    )
 
     summary_prompt = f"""
     Read the following text from the beginning of a document and answer in 3-4 sentences:
@@ -98,21 +58,22 @@ def generate_pdf_summary(pages, chat_id):
     Summary:
     """
 
-    response = llm.invoke(summary_prompt)
+    response = summary_llm.invoke(summary_prompt)
 
     summary = response.content.strip()
 
     # create summaries folder
-    os.makedirs("summaries", exist_ok=True)
-
-    summary_path = f"summaries/{chat_id}.json"
-
-    # save summary
-    with open(summary_path, "w") as f:
-
-        json.dump({
-            "summary": summary
-        }, f)
+    summaries_collection.update_one(
+        {"chatId": chat_id},
+        {
+            "$set": {
+                "chatId": chat_id,
+                "summary": summary,
+                "updatedAt": datetime.now(timezone.utc),
+            }
+        },
+        upsert=True,
+    )
 
     print(f"PDF Summary generated:\n{summary}")
 
@@ -121,14 +82,23 @@ def generate_pdf_summary(pages, chat_id):
 
 def makeVectors_storeDB(chunks, chat_id):
 
-    persist_path = f"chroma_langchain_db/{chat_id}"
+    if len(chunks) == 0:
+        raise ValueError("No chunks were generated.")
 
-    vectorstore = Chroma.from_documents(
-        documents=chunks,
-        embedding=embedding_model,
-        persist_directory=persist_path
+    # Attach chatId metadata to every chunk
+    for chunk in chunks:
+        chunk.metadata["chatId"] = chat_id
+
+    persist_path = "chroma_langchain_db"
+
+    vectorstore = Chroma(
+        persist_directory=persist_path,
+        embedding_function=embedding_model,
+        collection_name="documents",
     )
 
-    print(f"Vector DB created for chat: {chat_id}")
+    vectorstore.add_documents(chunks)
+
+    print(f"Stored {len(chunks)} chunks for {chat_id}")
 
     return vectorstore
