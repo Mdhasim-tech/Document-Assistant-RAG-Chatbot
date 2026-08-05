@@ -1,7 +1,14 @@
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface.embeddings import HuggingFaceEmbeddings
-from langchain_chroma import Chroma
+# from langchain_chroma import Chroma
+from qdrant_client import QdrantClient
+from langchain_qdrant import QdrantVectorStore
+from qdrant_client.http.models import (
+    Distance,
+    VectorParams,
+    PayloadSchemaType,
+)
 from langchain_groq import ChatGroq
 from dotenv import load_dotenv
 
@@ -20,7 +27,35 @@ summary_llm = ChatGroq(
     max_tokens=300,
     api_key=os.getenv("GROQ_API_KEY"),
 )
+client = QdrantClient(
+    url=os.getenv("QDRANT_URL"),
+    api_key=os.getenv("QDRANT_API_KEY"),
+)
+# ---------- Create collection if it doesn't exist ----------
+# ---------- Create collection if it doesn't exist ----------
 
+if not client.collection_exists("documents"):
+
+    client.create_collection(
+        collection_name="documents",
+        vectors_config=VectorParams(
+            size=384,
+            distance=Distance.COSINE,
+        ),
+    )
+
+# ---------- Create payload index if missing ----------
+
+try:
+
+    client.create_payload_index(
+        collection_name="documents",
+        field_name="metadata.chatId",
+        field_schema=PayloadSchemaType.KEYWORD,
+    )
+
+except Exception:
+    pass
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=1200, chunk_overlap=200)
 def load_documents(pdf_path):
 
@@ -85,16 +120,13 @@ def makeVectors_storeDB(chunks, chat_id):
     if len(chunks) == 0:
         raise ValueError("No chunks were generated.")
 
-    # Attach chatId metadata to every chunk
     for chunk in chunks:
         chunk.metadata["chatId"] = chat_id
 
-    persist_path = "chroma_langchain_db"
-
-    vectorstore = Chroma(
-        persist_directory=persist_path,
-        embedding_function=embedding_model,
+    vectorstore = QdrantVectorStore(
+        client=client,
         collection_name="documents",
+        embedding=embedding_model,
     )
 
     vectorstore.add_documents(chunks)

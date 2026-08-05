@@ -1,34 +1,40 @@
 from langchain_huggingface.embeddings import HuggingFaceEmbeddings
-from langchain_chroma import Chroma
 from langchain_core.prompts import PromptTemplate
 from langchain_groq import ChatGroq
 from database import summaries_collection
+from langchain_qdrant import QdrantVectorStore
 from dotenv import load_dotenv
-
+from qdrant_client import QdrantClient
+from qdrant_client.http.models import Filter, FieldCondition, MatchValue
 import os
 
 load_dotenv()
 
-# Global embedding model
 embedding_model = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
+)
+
+client = QdrantClient(
+    url=os.getenv("QDRANT_URL"),
+    api_key=os.getenv("QDRANT_API_KEY"),
 )
 
 
 def load_vectorDB():
 
-    vectorstore = Chroma(
-        persist_directory="chroma_langchain_db",
-        embedding_function=embedding_model,
+    return QdrantVectorStore(
+        client=client,
         collection_name="documents",
+        embedding=embedding_model,
     )
-
-    return vectorstore
 
 
 def load_pdf_summary(chat_id):
 
-    doc = summaries_collection.find_one({"chatId": chat_id}, {"_id": 0, "summary": 1})
+    doc = summaries_collection.find_one(
+        {"chatId": chat_id},
+        {"_id": 0, "summary": 1},
+    )
 
     if doc:
         return doc["summary"]
@@ -40,7 +46,18 @@ def build_retriever(vectorstore, chat_id):
 
     retriever = vectorstore.as_retriever(
         search_type="mmr",
-        search_kwargs={"k": 6, "fetch_k": 20, "filter": {"chatId": chat_id}},
+        search_kwargs={
+            "k": 6,
+            "fetch_k": 20,
+            "filter": Filter(
+                must=[
+                    FieldCondition(
+                        key="metadata.chatId",
+                        match=MatchValue(value=chat_id),
+                    )
+                ]
+            ),
+        },
     )
 
     return retriever
@@ -52,15 +69,13 @@ def build_llm():
         model="llama-3.3-70b-versatile",
         temperature=0.2,
         max_tokens=1024,
-        api_key=os.getenv("GROQ_API_KEY")
+        api_key=os.getenv("GROQ_API_KEY"),
     )
-
-    print("Groq LLM is ready")
 
     return llm
 
 
-def build_prompt(pdf_summary: str):
+def build_prompt(pdf_summary):
 
     template = """
 You are an intelligent AI assistant.
@@ -90,11 +105,4 @@ Question:
 Answer:
 """
 
-    filled_template = template.replace(
-        "{pdf_summary}",
-        pdf_summary
-    )
-
-    return PromptTemplate.from_template(
-        filled_template
-    )
+    return PromptTemplate.from_template(template.replace("{pdf_summary}", pdf_summary))

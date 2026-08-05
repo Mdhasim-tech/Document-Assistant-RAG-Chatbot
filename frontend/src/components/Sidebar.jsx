@@ -1,5 +1,5 @@
 import { useState } from "react";
-
+import axios from "axios";
 function Sidebar({
   chats,
   setChats,
@@ -51,7 +51,7 @@ function Sidebar({
     );
 
     // Backend API later
-    // axios.patch(`/chat/${chatId}/rename`, { title: trimmedName });
+    axios.patch(`http://localhost:5000/chat/${chatId}/rename`, { title: trimmedName });
 
     setEditingChatId(null);
   };
@@ -60,7 +60,7 @@ function Sidebar({
     console.log("Delete:", chatId);
 
     // Backend API later
-    // axios.delete(`/chat/${chatId}`);
+    axios.delete(`http://localhost:5000/chat/${chatId}`);
 
     setChats((prev) => prev.filter((chat) => chat.chatId !== chatId));
 
