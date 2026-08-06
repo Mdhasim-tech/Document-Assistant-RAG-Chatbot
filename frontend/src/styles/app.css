@@ -329,7 +329,7 @@ body {
 
 /* AI MESSAGE */
 
-.message.ai {
+.message.assistant {
   background:
     linear-gradient(
       135deg,

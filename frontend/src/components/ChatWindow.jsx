@@ -32,7 +32,7 @@ function ChatWindow({
         {!currentChat ? (
 
           <div className="welcome-message">
-            Create a new chat to begin.
+            Create a new chat to begin Or <br></br>select an existing one.
           </div>
 
         ) : (
