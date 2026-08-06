@@ -1,84 +1,179 @@
-# 📄 Document Assistant RAG Chatbot
+# 📄 Document Assistant AI (RAG Chatbot)
 
-An AI-powered Retrieval-Augmented Generation (RAG) chatbot that allows users to upload documents and ask natural language questions about their contents. The application retrieves relevant information from uploaded documents using vector search and generates accurate, context-aware responses using Groq LLM.
+An AI-powered Retrieval-Augmented Generation (RAG) chatbot that allows users to upload PDF documents and chat with them using natural language.
+
+The application automatically summarizes uploaded documents, stores them securely in the cloud, indexes their contents as vector embeddings, and answers questions using an LLM with context-aware retrieval.
 
 ---
 
 ## 🚀 Features
 
-- 📄 Upload PDF and text documents
-- 🤖 AI-powered question answering
-- 🔍 Retrieval-Augmented Generation (RAG)
-- 🧠 Vector embeddings with ChromaDB
-- 💬 Interactive chat interface
-- 📚 Context-aware responses
-- ⚡ Fast document retrieval using LangChain
-- 📱 Responsive React frontend
-
----
-<img width="1358" height="680" alt="rag1" src="https://github.com/user-attachments/assets/985ca8b1-8210-4485-86a9-a75b85fb88f5" />
-<img width="1358" height="646" alt="rag2" src="https://github.com/user-attachments/assets/8f75d768-f521-4b0c-933b-46e8e6799df0" />
-<img width="1356" height="638" alt="rag3" src="https://github.com/user-attachments/assets/4a48797e-887b-434d-8418-1a0ae159a9d5" /> 
-
-
-
-## 🛠️ Tech Stack
-
-### Frontend
-- React
-- Axios
-- CSS
-- React Hooks
-
-### Backend
-- Python
-- Flask
-- LangChain
-- ChromaDB
-- Groq API
-- Sentence Transformers
-- PyPDF
+- 📂 Upload PDF documents
+- 🤖 AI-generated document summary
+- 💬 Chat with your documents
+- 🔍 Semantic search using embeddings
+- 🧠 Retrieval-Augmented Generation (RAG)
+- ☁️ Cloud Vector Database (Qdrant Cloud)
+- ☁️ Cloud PDF Storage (MongoDB GridFS)
+- 📝 Multiple chat sessions
+- ✏️ Rename chats
+- 🗑 Delete chats
+- ⚡ Fast similarity search
+- 🎯 Context-aware answers using retrieved chunks
 
 ---
 
-## 📂 Project Structure
+# 🏗 Architecture
 
 ```
-Document-Assistant-RAG-Chatbot/
+React Frontend
+       │
+       ▼
+ Flask Backend
+       │
+ ├──────────────► MongoDB Atlas
+ │                 ├── Chats
+ │                 ├── Messages
+ │                 ├── Summaries
+ │                 └── GridFS (PDF Storage)
+ │
+ ├──────────────► Qdrant Cloud
+ │                 └── Vector Embeddings
+ │
+ └──────────────► Groq Llama 3.3
+```
+
+---
+
+# 🛠 Tech Stack
+
+### Frontend
+
+- React
+- CSS
+- Axios
+
+### Backend
+
+- Flask
+- LangChain
+- PyMuPDF
+- Sentence Transformers
+- HuggingFace Embeddings
+
+### AI
+
+- Groq (Llama 3.3 70B)
+- LangChain RAG Pipeline
+
+### Database
+
+- MongoDB Atlas
+- GridFS
+- Qdrant Cloud
+
+---
+
+# 📂 Project Structure
+
+```
+DocMind AI/
+│
+├── frontend/
+│   ├── src/
+│   ├── public/
+│   └── package.json
 │
 ├── backend/
-│   ├── chroma_langchain_db/
-│   ├── data/
-│   ├── uploads/
-│   ├── summaries/
 │   ├── app.py
 │   ├── ingest.py
 │   ├── rag_pipeline.py
-│   └── requirements.txt
-│
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   ├── package.json
-│   └── README.md
+│   ├── database.py
+│   ├── storage_service.py
+│   ├── chat_service.py
+│   ├── status_service.py
+│   ├── requirements.txt
+│   └── .env
 │
 └── README.md
 ```
 
 ---
 
-## ⚙️ Installation
+# ⚙️ How it Works
 
-### 1. Clone the repository
+## 1. Upload PDF
 
-```bash
-git clone https://github.com/Mdhasim-tech/Document-Assistant-RAG-Chatbot.git
-cd Document-Assistant-RAG-Chatbot
+- User uploads a PDF.
+- PDF is stored in MongoDB GridFS.
+- Metadata is stored in MongoDB.
+
+## 2. Document Processing
+
+- Extract text using PyMuPDF.
+- Split document into chunks.
+- Generate embeddings.
+- Store vectors in Qdrant Cloud.
+- Generate an AI summary.
+
+## 3. Chat
+
+When a user asks a question:
+
+- Relevant chunks are retrieved from Qdrant.
+- Retrieved context is combined with the document summary.
+- Groq Llama 3.3 generates the final answer.
+
+---
+
+# 🧠 AI Workflow
+
+```
+PDF
+ │
+ ▼
+PyMuPDF
+ │
+ ▼
+Chunking
+ │
+ ▼
+Embeddings
+ │
+ ▼
+Qdrant Cloud
+ │
+ ▼
+Retriever
+ │
+ ▼
+Groq Llama 3.3
+ │
+ ▼
+Answer
 ```
 
 ---
 
-### 2. Backend Setup
+# 📦 Environment Variables
+
+Create a `.env` file inside the backend folder.
+
+```env
+MONGO_URI=YOUR_MONGODB_URI
+
+GROQ_API_KEY=YOUR_GROQ_API_KEY
+
+QDRANT_URL=YOUR_QDRANT_CLUSTER_URL
+
+QDRANT_API_KEY=YOUR_QDRANT_API_KEY
+```
+
+---
+
+# ▶️ Running the Project
+
+## Backend
 
 ```bash
 cd backend
@@ -90,7 +185,7 @@ python app.py
 
 ---
 
-### 3. Frontend Setup
+## Frontend
 
 ```bash
 cd frontend
@@ -102,44 +197,35 @@ npm start
 
 ---
 
-## 🔐 Environment Variables
+# 📸 Screenshots
 
-Create a `.env` file inside the backend folder.
-
-```env
-GROQ_API_KEY=your_groq_api_key
-```
-
----
-
-## 🏗️ How It Works
-
-1. User uploads a document.
-2. The document is split into smaller chunks.
-3. Embeddings are generated for each chunk.
-4. Chunks are stored in ChromaDB.
-5. User asks a question.
-6. Relevant document chunks are retrieved using vector search.
-7. Groq LLM generates an answer using the retrieved context.
-8. The response is displayed in the chat interface.
+<img width="1358" height="680" alt="rag1" src="https://github.com/user-attachments/assets/61a0c45e-d701-420c-ad8e-f79d65530a88" />
+<img width="1364" height="633" alt="rag4" src="https://github.com/user-attachments/assets/10caf103-4abb-4ebd-8b11-29f05c88a00d" />
+<img width="1356" height="638" alt="rag3" src="https://github.com/user-attachments/assets/aea434de-a90e-4def-815c-ecd8430b8639" />
+<img width="1358" height="646" alt="rag2" src="https://github.com/user-attachments/assets/7aa5e480-2ee1-4bdc-ac78-927e94b8db87" />
 
 ---
 
-## 📌 Future Improvements
+# Future Improvements
 
-- Multiple document support
-- Conversation history
 - Authentication
-- Source citation highlighting
 - Streaming AI responses
-- Drag-and-drop document upload
-- Dark mode
-- Support for DOCX and PPT files
+- Image understanding inside PDFs
+- Citation support
+- OCR for scanned documents
+- Conversation export
+- Multiple document chat
+- Hybrid Search (Dense + BM25)
 
 ---
 
-## 👨‍💻 Author
+# Author
 
 **Md Hasim**
 
-GitHub: https://github.com/Mdhasim-tech
+- GitHub: https://github.com/Mdhasim-tech
+- LinkedIn: https://www.linkedin.com/in/md-hasim-tech/
+
+---
+
+If you found this project useful, consider giving it a ⭐ on GitHub.
