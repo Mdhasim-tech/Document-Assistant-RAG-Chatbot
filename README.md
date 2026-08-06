@@ -1,4 +1,4 @@
-# 📄 Document Assistant AI (RAG Chatbot)
+# 📄 DocMind AI (RAG Chatbot)
 
 An AI-powered Retrieval-Augmented Generation (RAG) chatbot that allows users to upload PDF documents and chat with them using natural language.
 
